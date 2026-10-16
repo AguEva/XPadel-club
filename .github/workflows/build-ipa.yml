@@ -1,0 +1,27 @@
+name: Build IPA
+on:
+  workflow_dispatch:
+  push:
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unzip project
+        run: unzip -q XPadelIOS.zip
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Build unsigned IPA
+        working-directory: XPadelIOS
+        run: |
+          xcodegen generate
+          xcodebuild -project XPadel.xcodeproj -scheme XPadel -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/XPadel.app Payload/
+          zip -qry ../XPadel.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: XPadel-ipa
+          path: XPadel.ipa
